@@ -1,0 +1,43 @@
+Nikita Digodiya
+
+Contact:
+Email: nikita@example.com
+Phone: +91 9876543210
+
+Objective:
+Motivated Computer Science student with a strong interest in Software Development, Artificial Intelligence, Machine Learning, and Natural Language Processing.
+
+Technical Skills:
+- SQL
+- HTML
+- CSS
+- JavaScript
+- GitHub
+
+Education:
+Bachelor of Technology in Computer Science
+Expected Graduation: 2027
+From MIT, Indore
+
+Projects:
+1. ATS Resume Analyzer- Developed a Python-based application to analyze resumes and calculate ATS scores.Implemented skill matching and missing skill detection.
+
+2. Sentiment Analysis System- Built a machine learning model to classify text as positive, negative, or neutral.Used Python and NLP techniques for text preprocessing.
+
+Certifications:
+- Python Programming
+- Machine Learning Basics
+- NLP Fundamentals
+
+Achievements:
+- Solved coding problems using Python and C++.
+- Participated in technical workshops and coding competitions.
+
+Languages:
+- English
+- Hindi
+
+Interests:
+- Artificial Intelligence
+- Natural Language Processing
+- Software Development
