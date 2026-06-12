@@ -12,6 +12,7 @@ A web-based ATS (Applicant Tracking System) Resume Analyzer built using Python, 
   * Data Analyst
   * Frontend Developer
   * Software Development Engineer (SDE)
+
 * Skill matching based on target role
 * Missing skill detection
 * ATS score calculation
@@ -82,9 +83,6 @@ pip install -r requirements.txt
 
 python flask_app.py
 
-7. Open in browser
-
-http://127.0.0.1:5000
 
 ## Future Improvements
 
