@@ -1,10 +1,18 @@
+import os
+import re
+import sys
+import pdfplumber
 
-import pdfplumber # Used to extract text from PDF files
-import re # Used for regular expressions (pattern matching for emails, phones, skills)
-import os # Used for interacting with the operating system (like getting file paths)
+# Force UTF-8 output on Windows to prevent UnicodeEncodeError
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8')
 
-# Print the current working directory to debug file path issues
-print(os.getcwd())
+# pyrefly: ignore [missing-import]
+from sumy.parsers.plaintext import PlaintextParser
+# pyrefly: ignore [missing-import]
+from sumy.nlp.tokenizers import Tokenizer
+# pyrefly: ignore [missing-import]
+from sumy.summarizers.text_rank import TextRankSummarizer
 
 # Dictionary defining the required skills for different job roles
 roles = {
@@ -16,19 +24,20 @@ roles = {
 
 def extract_text(pdf_file):
     """Extracts all text from a given PDF file and returns it in lowercase."""
-    text = "" # Initialize an empty string to hold the extracted text
+    text = ""
+    try:
+        with pdfplumber.open(pdf_file) as pdf:
+            for page in pdf.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    text += page_text
+    except FileNotFoundError:
+        print(f"Error: The file {pdf_file} was not found.")
+        return ""
+    except Exception as e:
+        print(f"Error reading PDF: {e}")
+        return ""
 
-    # Open the PDF file using pdfplumber
-    with pdfplumber.open(pdf_file) as pdf:
-        # Loop through each page in the PDF
-        for page in pdf.pages:
-            page_text = page.extract_text() # Extract text from the current page
-
-            # If text is found on the page, append it to the overall text
-            if page_text:
-                text += page_text
-
-    # Return the entire extracted text converted to lowercase for easier matching
     return text.lower()
 
 
@@ -101,7 +110,8 @@ def extract_skills_section(text):
             cleaned_line = cleaned_line[:-1].strip()
             
         # Check if the line is the start of the skills section
-        if cleaned_line in ["skills", "technical skills", "core competencies", "technologies", "technical proficiencies"]:
+        if cleaned_line in ["skills", "technical skills", "core competencies", "technical expertise",
+                            "technologies", "tech stack", "programming languages"]:
             in_skills = True # We found the skills section, start tracking
             continue # Skip the header line itself
             
@@ -138,6 +148,63 @@ def extract_skills_section(text):
     return text
 
 
+def extract_projects_section(text):
+
+    project_headers = [
+        "projects",
+        "academic projects",
+        "personal projects",
+        "project experience"
+    ]
+
+    end_headers = [
+        "education", "experience", "skills", "certifications",
+        "achievements", "languages", "work experience",
+        "professional experience", "work history", "employment"
+    ]
+
+    lines = text.split("\n")
+
+    projects = []
+    in_projects = False
+
+    for line in lines:
+
+        clean = line.strip().lower()
+
+        if clean.endswith(":"):
+            clean = clean[:-1]
+
+        if clean in project_headers:
+            in_projects = True
+            continue
+
+        if in_projects:
+            # Check if this line starts a new section (partial match)
+            if any(h in clean for h in end_headers):
+                break
+
+            projects.append(line)
+
+    return "\n".join(projects)
+
+def summarize_project(project_text):
+
+    parser = PlaintextParser.from_string(
+        project_text,
+        Tokenizer("english")
+    )
+
+    summarizer = TextRankSummarizer()
+
+    summary = ""
+
+    for sentence in summarizer(parser.document, 1):
+        summary += str(sentence)
+
+    return summary
+
+
 def analyze_resume(pdf_file, job_role):
     """Main function that orchestrates the resume analysis process."""
     # 1. Extract all text from the PDF
@@ -157,6 +224,7 @@ def analyze_resume(pdf_file, job_role):
 
     # 4. Isolate the 'Skills' section from the resume to analyze it accurately
     skills_text = extract_skills_section(text)
+    projects_text = extract_projects_section(text)
 
     found_skills = []
 
@@ -180,6 +248,15 @@ def analyze_resume(pdf_file, job_role):
     # 7. Calculate the ATS (Applicant Tracking System) score as a percentage
     score = (len(found_skills) / len(required_skills)) * 100
 
+    # if no skills section found print there is no skills in resume:
+    if not skills_text:
+        print("No skills section found in the resume.")
+        return {
+            "error": "No skills section found"
+        }
+
+
+     
     # 8. Print the generated report to the console
     print("\n" + "=" * 40)
     print("ATS RESUME ANALYSIS REPORT")
@@ -191,11 +268,66 @@ def analyze_resume(pdf_file, job_role):
 
     print("\nMatched Skills:")
     for skill in found_skills:
-        print(f"✓ {skill}")
+        print(f"  [+] {skill}")
 
     print("\nMissing Skills:")
     for skill in missing_skills:
-        print(f"✗ {skill}")
+        print(f"  [-] {skill}")
+
+    print("Projects:")
+    project_lines = projects_text.split("\n") if projects_text else []
+    
+    valid_projects = []
+    project_blocks = {}
+    current_proj = None
+    
+    for line in project_lines:
+        line = line.strip()
+        if not line:
+            continue
+            
+        is_bullet = line.startswith(("-", "•", "*", "▪", "✓"))
+        
+        # A project title is identified by the pipe '|' separator
+        # e.g., "Sentiment Analysis using NLP | Personal Project | 2025"
+        # Exclude education/degree lines that also use '|'
+        education_keywords = [
+            "bachelor", "master", "b.tech", "btech", "m.tech", "mtech",
+            "b.e.", "m.e.", "b.sc", "m.sc", "phd", "diploma", "degree",
+            "engineering", "university", "institute", "college"
+        ]
+        line_lower = line.lower()
+        is_education = any(kw in line_lower for kw in education_keywords)
+        is_title = not is_bullet and "|" in line and not is_education
+                
+        if is_title:
+            current_proj = line
+            valid_projects.append(current_proj)
+            project_blocks[current_proj] = []
+        elif current_proj:
+            project_blocks[current_proj].append(line)
+
+    project_summaries = {}
+    project_count = len(valid_projects)
+    
+    for p in valid_projects:
+        print(f"  [+] {p}")
+        # Summarize just the text belonging to this specific project
+        proj_text = "\n".join(project_blocks.get(p, []))
+        if proj_text.strip():
+            summary = summarize_project(proj_text)
+            if summary:
+                print(f"  Summary: {summary}")
+            project_summaries[p] = summary
+            
+    # Add bonus score for projects
+    if project_count >= 3:
+        score += 10
+    elif project_count >= 1:
+        score += 5
+
+    # Cap score at 100%
+    score = min(score, 100.0)
 
     # Display the score formatted to 0 decimal places
     print(f"\nATS Score: {score:.0f}%")
@@ -207,6 +339,8 @@ def analyze_resume(pdf_file, job_role):
         "phone": phone,
         "matched_skills": found_skills,
         "missing_skills": missing_skills,
+        "projects": valid_projects,
+        "project_summaries": project_summaries,
         "ats_score": round(score, 0)
     }
 
