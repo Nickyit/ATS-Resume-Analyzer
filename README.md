@@ -36,6 +36,15 @@ A web-based ATS (Applicant Tracking System) Resume Analyzer built using Python, 
 
 ---
 
+## 📸 Project Demo
+
+### Homepage — Upload Resume
+![Homepage Screenshot](screenshots/homepage.png)
+
+> Upload your resume in PDF format, select a target job role, and get an instant ATS compatibility score with skill analysis and project summaries.
+
+---
+
 ## 🛠️ Tech Stack
 
 ### Backend
@@ -80,6 +89,8 @@ ATS-Resume-Analyzer/
 │   ├── resume.html          # Jinja2 template (upload form + results page)
 │   ├── resume.css           # Dark theme styles with glassmorphism
 │   └── resume.js            # Frontend JavaScript
+├── screenshots/             # Project demo screenshots
+│   └── homepage.png
 ├── requirements.txt         # Python dependencies
 └── README.md
 ```
