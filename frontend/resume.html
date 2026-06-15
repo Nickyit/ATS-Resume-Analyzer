@@ -95,13 +95,45 @@
                         <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
                     </svg>
                     Projects ({{ data.projects|length }})
+                    {% if not data.ai_available %}
+                    <span class="ai-fallback-badge" title="AI analysis unavailable — using flat scoring">⚡ Flat Scoring</span>
+                    {% endif %}
                 </h3>
                 <div class="projects-list">
                     {% for project in data.projects %}
                     <div class="project-card">
-                        <div class="project-title">{{ project }}</div>
+                        <div class="project-card-header">
+                            <div class="project-title">{{ project }}</div>
+                            {% if data.project_relevance and project in data.project_relevance %}
+                            {% set rel = data.project_relevance[project] %}
+                            <div class="relevance-badge {% if rel.score >= 70 %}high{% elif rel.score >= 40 %}medium{% else %}low{% endif %}">
+                                {{ rel.score }}%
+                            </div>
+                            {% endif %}
+                        </div>
                         {% if data.project_summaries and project in data.project_summaries and data.project_summaries[project] %}
                         <div class="project-summary">{{ data.project_summaries[project] }}</div>
+                        {% endif %}
+                        {% if data.project_relevance and project in data.project_relevance %}
+                        {% set rel = data.project_relevance[project] %}
+                        {% if rel.reason %}
+                        <div class="relevance-reason">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                            </svg>
+                            {{ rel.reason }}
+                        </div>
+                        {% endif %}
+                        {% if rel.relevant_skills %}
+                        <div class="relevance-skills">
+                            {% for skill in rel.relevant_skills %}
+                            <span class="relevance-skill-tag">{{ skill }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
                         {% endif %}
                     </div>
                     {% endfor %}

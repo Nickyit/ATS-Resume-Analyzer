@@ -2,6 +2,7 @@ import os
 import re
 import sys
 import pdfplumber
+from ai_analyzer import analyze_all_projects, calculate_relevance_bonus
 
 # Force UTF-8 output on Windows to prevent UnicodeEncodeError
 if sys.stdout.encoding != 'utf-8':
@@ -319,12 +320,19 @@ def analyze_resume(pdf_file, job_role):
             if summary:
                 print(f"  Summary: {summary}")
             project_summaries[p] = summary
-            
-    # Add bonus score for projects
-    if project_count >= 3:
-        score += 10
-    elif project_count >= 1:
-        score += 5
+
+    # 9. AI-powered project relevance analysis
+    print("\nAnalyzing project relevance with AI...")
+    project_relevance, ai_available = analyze_all_projects(valid_projects, project_blocks, job_role)
+    
+    # 10. Calculate project bonus (AI-weighted or flat fallback)
+    project_bonus, used_ai = calculate_relevance_bonus(project_relevance, project_count)
+    score += project_bonus
+    
+    if used_ai:
+        print(f"  AI Relevance Bonus: +{project_bonus} points")
+    else:
+        print(f"  Flat Project Bonus: +{project_bonus} points (AI unavailable)")
 
     # Cap score at 100%
     score = min(score, 100.0)
@@ -341,6 +349,8 @@ def analyze_resume(pdf_file, job_role):
         "missing_skills": missing_skills,
         "projects": valid_projects,
         "project_summaries": project_summaries,
+        "project_relevance": project_relevance,
+        "ai_available": ai_available,
         "ats_score": round(score, 0)
     }
 

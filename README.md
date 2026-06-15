@@ -18,14 +18,19 @@ A web-based ATS (Applicant Tracking System) Resume Analyzer built using Python, 
 - ❌ Missing skill detection
 - 📊 ATS score calculation (percentage-based)
 
-### Project Analysis *(New)*
+### Project Analysis
 - 🗂️ Automatic extraction of the **Projects** section from resumes
 - 🧠 **NLP-powered project summarization** using TextRank (via Sumy)
-- 📈 Bonus ATS score for candidates with projects:
-  - **+5 points** for 1–2 projects
-  - **+10 points** for 3+ projects
 - 🏷️ Smart project title detection (filters out education/degree lines)
 - 📋 Per-project summary displayed in the results
+
+### AI-Powered Relevance Analysis *(New)*
+- 🤖 **Gemini AI** analyzes each project's relevance to the target role
+- 🎯 **Relevance score (0–100%)** per project with color-coded badges
+- 💡 AI-generated **reasoning** explaining why the project is relevant
+- 🏷️ **Relevant skills** extracted from each project by AI
+- 📈 **Weighted ATS bonus** based on average project relevance (up to +15 points)
+- ⚡ **Graceful fallback** to flat scoring if API key is not configured
 
 ### User Interface
 - 🌑 Modern dark-themed UI with glassmorphism effects
@@ -33,6 +38,7 @@ A web-based ATS (Applicant Tracking System) Resume Analyzer built using Python, 
 - 🎨 Gradient accents and smooth hover animations
 - 🔵 Circular ATS score visualization with conic gradient
 - 💜 Dedicated project cards with hover effects and summaries
+- 🟢🟡🔴 Color-coded relevance badges with micro-animations
 
 ---
 
@@ -54,6 +60,8 @@ A web-based ATS (Applicant Tracking System) Resume Analyzer built using Python, 
 | Flask | Web framework & routing |
 | PDFPlumber | PDF text extraction |
 | Sumy (TextRank) | NLP-based project summarization |
+| Google Gemini AI | AI-powered project relevance analysis |
+| python-dotenv | Environment variable management |
 | Regex | Contact info & pattern extraction |
 
 ### Frontend
@@ -72,8 +80,9 @@ A web-based ATS (Applicant Tracking System) Resume Analyzer built using Python, 
 3. The application extracts all text from the PDF.
 4. **Skills** are matched against role-specific requirements.
 5. **Projects** are extracted and summarized using NLP.
-6. **ATS score** is calculated (skill match % + project bonus).
-7. Results are displayed with matched skills, missing skills, project summaries, and recommendations.
+6. **Gemini AI** analyzes each project's relevance to the target role.
+7. **ATS score** is calculated (skill match % + AI-weighted project bonus).
+8. Results are displayed with matched skills, missing skills, project summaries, relevance scores, and recommendations.
 
 ---
 
@@ -83,6 +92,7 @@ A web-based ATS (Applicant Tracking System) Resume Analyzer built using Python, 
 ATS-Resume-Analyzer/
 ├── backend/
 │   ├── app.py              # Core analysis engine (skill matching, project extraction, NLP summarization)
+│   ├── ai_analyzer.py       # AI-powered project relevance analysis (Gemini)
 │   ├── flask_app.py         # Flask web server & routes
 │   └── __pycache__/
 ├── frontend/
@@ -91,6 +101,8 @@ ATS-Resume-Analyzer/
 │   └── resume.js            # Frontend JavaScript
 ├── screenshots/             # Project demo screenshots
 │   └── homepage.png
+├── .env.example             # API key template
+├── .env                     # Your API keys (git-ignored)
 ├── requirements.txt         # Python dependencies
 └── README.md
 ```
@@ -133,7 +145,21 @@ ATS-Resume-Analyzer/
    pip install -r requirements.txt
    ```
 
-6. **Run the application**
+6. **Set up your API key** *(for AI project analysis)*
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   Edit `.env` and add your [Google Gemini API key](https://aistudio.google.com/apikey) (free tier available):
+
+   ```
+   GEMINI_API_KEY=your_actual_api_key
+   ```
+
+   > **Note:** The app works without an API key — it will fall back to flat project scoring.
+
+7. **Run the application**
 
    ```bash
    cd backend
@@ -154,6 +180,8 @@ ATS-Resume-Analyzer/
 - Werkzeug 3.1.8
 - Jinja2 3.1.6
 - Sumy (NLP summarization)
+- google-genai (Gemini AI integration)
+- python-dotenv (Environment variable management)
 
 ---
 
@@ -169,6 +197,9 @@ ATS-Resume-Analyzer/
 - [x] NLP-powered project summarization (TextRank)
 - [x] Bonus scoring for projects
 - [x] Project cards with summaries in results UI
+- [x] AI-powered project relevance analysis (Gemini)
+- [x] Relevance-weighted ATS scoring with fallback
+- [x] Color-coded relevance badges and skill tags
 - [ ] Resume section extraction (Education, Experience, etc.)
 - [ ] Experience analysis and scoring
 - [ ] Resume-job description matching
