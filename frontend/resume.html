@@ -106,8 +106,13 @@
                             <div class="project-title">{{ project }}</div>
                             {% if data.project_relevance and project in data.project_relevance %}
                             {% set rel = data.project_relevance[project] %}
-                            <div class="relevance-badge {% if rel.score >= 70 %}high{% elif rel.score >= 40 %}medium{% else %}low{% endif %}">
-                                {{ rel.score }}%
+                            <div class="relevance-header-badges">
+                                <span class="relevance-category {% if rel.category == 'Relevant' %}high{% elif rel.category == 'Partially Relevant' %}medium{% else %}low{% endif %}">
+                                    {{ rel.category }}
+                                </span>
+                                <div class="relevance-badge {% if rel.score >= 70 %}high{% elif rel.score >= 40 %}medium{% else %}low{% endif %}">
+                                    {{ rel.score }}/100
+                                </div>
                             </div>
                             {% endif %}
                         </div>

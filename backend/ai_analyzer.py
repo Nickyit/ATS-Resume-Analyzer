@@ -14,33 +14,36 @@ load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '.env'))
 # The prompt template for project relevance analysis
 RELEVANCE_PROMPT = """You are an ATS Resume Analyzer.
 
-Your task is to analyze whether a project is relevant to a target job role.
-
 Target Role:
 {job_role}
 
 Project Description:
 {project_text}
 
-Instructions:
-1. Read the project description carefully.
-2. Decide how relevant the project is to the target role.
-3. Give a relevance score between 0 and 100.
-4. Explain the reason in 2-3 simple sentences.
-5. Mention which technologies or concepts make the project relevant.
-6. Keep the response concise.
+Your task:
 
-Output Format:
+1. Decide if this project is relevant to the target role.
+2. Give a relevance score from 0 to 100.
+3. Clearly state:
+   * Relevant
+   * Partially Relevant
+   * Not Relevant
+4. Give a short explanation.
+5. Mention which skills or technologies support your decision.
 
-Relevance Score: <score>%
+Return ONLY in this format:
+
+Relevance: Relevant / Partially Relevant / Not Relevant
+
+Score: XX/100
 
 Reason:
-<short explanation>
+<2-3 sentences>
 
 Relevant Skills:
-- skill 1
-- skill 2
-- skill 3"""
+* skill1
+* skill2
+* skill3"""
 
 # Map internal role keys to human-readable role names for the prompt
 ROLE_DISPLAY_NAMES = {
@@ -72,23 +75,36 @@ def _get_gemini_client():
 
 def parse_ai_response(response_text):
     """
-    Parses the structured AI response to extract relevance score, reason, and skills.
+    Parses the structured AI response to extract relevance category, score, reason, and skills.
     
     Expected format:
-        Relevance Score: <number>%
+        Relevance: Relevant / Partially Relevant / Not Relevant
+        Score: XX/100
         Reason:
         <text>
         Relevant Skills:
-        - skill1
-        - skill2
+        * skill1
+        * skill2
     
-    Returns a dict with keys: score, reason, relevant_skills
+    Returns a dict with keys: category, score, reason, relevant_skills
     Returns None if parsing fails.
     """
     try:
-        # Extract the relevance score (e.g., "Relevance Score: 85%")
-        score_match = re.search(r'Relevance\s+Score:\s*(\d+)\s*%', response_text, re.IGNORECASE)
-        score = int(score_match.group(1)) if score_match else 0
+        # Extract the relevance category (e.g., "Relevance: Relevant")
+        category = "Unknown"
+        category_match = re.search(
+            r'Relevance:\s*(Relevant|Partially\s+Relevant|Not\s+Relevant)',
+            response_text,
+            re.IGNORECASE
+        )
+        if category_match:
+            category = category_match.group(1).strip().title()
+        
+        # Extract the score (e.g., "Score: 85/100" or "Score: 85%")
+        score = 0
+        score_match = re.search(r'Score:\s*(\d+)\s*[/%]', response_text, re.IGNORECASE)
+        if score_match:
+            score = int(score_match.group(1))
         
         # Clamp score to 0-100
         score = max(0, min(100, score))
@@ -103,7 +119,7 @@ def parse_ai_response(response_text):
         if reason_match:
             reason = reason_match.group(1).strip()
         
-        # Extract relevant skills (lines starting with "- ")
+        # Extract relevant skills (lines starting with "*", "-", or "•")
         skills = []
         skills_match = re.search(
             r'Relevant\s+Skills:\s*\n(.*)',
@@ -119,6 +135,7 @@ def parse_ai_response(response_text):
             ]
         
         return {
+            "category": category,
             "score": score,
             "reason": reason,
             "relevant_skills": skills
@@ -159,7 +176,7 @@ def analyze_project_relevance(project_title, project_text, job_role):
     
     try:
         response = client.models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash",
             contents=prompt
         )
         
