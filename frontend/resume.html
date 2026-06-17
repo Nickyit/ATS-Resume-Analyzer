@@ -175,10 +175,22 @@
                     <select name="role" required
                         style="width: 100%; padding: 1rem; background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: var(--text-main); cursor: pointer; outline: none; appearance: none;">
                         <option value="" disabled selected>-- Choose a role --</option>
-                        <option value="ai/ml">AI / ML Engineer</option>
-                        <option value="data analyst">Data Analyst</option>
-                        <option value="frontend">Frontend Developer</option>
-                        <option value="sde">Software Development Engineer (SDE)</option>
+                        <optgroup label="Tech Roles">
+                            <option value="ai/ml">AI / ML Engineer</option>
+                            <option value="backend">Backend Developer</option>
+                            <option value="data analyst">Data Analyst</option>
+                            <option value="devops">DevOps Engineer</option>
+                            <option value="frontend">Frontend Developer</option>
+                            <option value="fullstack">Full Stack Developer</option>
+                            <option value="sde">Software Development Engineer (SDE)</option>
+                        </optgroup>
+                        <optgroup label="Non-Tech Roles">
+                            <option value="business analyst">Business Analyst</option>
+                            <option value="hr">Human Resources (HR)</option>
+                            <option value="marketing">Marketing</option>
+                            <option value="product manager">Product Manager</option>
+                            <option value="sales">Sales</option>
+                        </optgroup>
                     </select>
                     <!-- Custom dropdown arrow -->
                     <div style="position: absolute; right: 1rem; top: 3.2rem; pointer-events: none;"></div>
