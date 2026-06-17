@@ -20,7 +20,15 @@ roles = {
     "data analyst": ["python", "sql", "excel", "power bi", "tableau", "pandas", "numpy"],
     "ai/ml": ["python", "machine learning", "nlp", "tensorflow", "pytorch", "scikit-learn", "pandas", "numpy"],
     "frontend": ["html", "css", "javascript", "react", "git"],
-    "sde": ["java", "python", "c++", "sql", "git", "dsa"]
+    "sde": ["java", "python", "c++", "sql", "git", "dsa"],
+    "backend": ["python", "java", "node.js", "django", "flask", "sql", "nosql", "api", "aws"],
+    "fullstack": ["html", "css", "javascript", "react", "node.js", "python", "sql", "git"],
+    "devops": ["aws", "azure", "docker", "kubernetes", "ci/cd", "linux", "jenkins", "terraform", "bash"],
+    "product manager": ["agile", "scrum", "jira", "product strategy", "user research", "roadmap", "leadership"],
+    "marketing": ["seo", "content marketing", "social media", "google analytics", "email marketing", "copywriting"],
+    "sales": ["b2b", "crm", "lead generation", "cold calling", "negotiation", "salesforce", "communication"],
+    "hr": ["recruitment", "onboarding", "employee relations", "performance management", "hr policies", "communication"],
+    "business analyst": ["requirements gathering", "sql", "excel", "data analysis", "agile", "stakeholder management"]
 }
 
 def extract_text(pdf_file):
@@ -85,6 +93,38 @@ def get_required_skills(job_role):
     # Check for Software Development Engineer (SDE) roles
     elif job_role in ["sde", "software", "engineer"]:
         return roles["sde"]
+
+    # Check for Backend roles
+    elif job_role in ["backend", "backend developer"]:
+        return roles["backend"]
+        
+    # Check for Full Stack roles
+    elif job_role in ["fullstack", "full stack developer", "full stack"]:
+        return roles["fullstack"]
+        
+    # Check for DevOps roles
+    elif job_role in ["devops", "devops engineer"]:
+        return roles["devops"]
+        
+    # Check for Product Manager roles
+    elif job_role in ["product manager", "pm", "product"]:
+        return roles["product manager"]
+        
+    # Check for Marketing roles
+    elif job_role in ["marketing", "digital marketing"]:
+        return roles["marketing"]
+        
+    # Check for Sales roles
+    elif job_role in ["sales", "sales executive", "business development"]:
+        return roles["sales"]
+        
+    # Check for HR roles
+    elif job_role in ["hr", "human resources", "recruiter", "talent acquisition"]:
+        return roles["hr"]
+        
+    # Check for Business Analyst roles
+    elif job_role in ["business analyst", "ba"]:
+        return roles["business analyst"]
 
     # If the role doesn't match anything, return None
     return None
