@@ -93,6 +93,17 @@ body {
     letter-spacing: 1px;
 }
 
+.level-badge {
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
 .score-circle {
     position: relative;
     width: 120px;
@@ -187,6 +198,57 @@ body {
     .skills-grid {
         grid-template-columns: 1fr;
     }
+}
+
+/* --- Skills Evaluation Section --- */
+
+.skills-evaluation-card {
+    margin-top: 1.5rem;
+    padding: 1.25rem;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.skills-evaluation-card .eval-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.skills-evaluation-card .eval-body {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+}
+
+.skills-evaluation-card.sufficient {
+    background: rgba(16, 185, 129, 0.05);
+    border-color: rgba(16, 185, 129, 0.2);
+}
+
+.skills-evaluation-card.sufficient .eval-header {
+    color: #34d399;
+}
+
+.skills-evaluation-card.needs-improvement {
+    background: rgba(251, 191, 36, 0.05);
+    border-color: rgba(251, 191, 36, 0.2);
+}
+
+.skills-evaluation-card.needs-improvement .eval-header {
+    color: #fbbf24;
+}
+
+.skills-evaluation-card.insufficient {
+    background: rgba(239, 68, 68, 0.05);
+    border-color: rgba(239, 68, 68, 0.2);
+}
+
+.skills-evaluation-card.insufficient .eval-header {
+    color: #f87171;
 }
 
 /* --- Projects Section --- */
