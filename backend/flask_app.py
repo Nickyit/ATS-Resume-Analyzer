@@ -22,6 +22,9 @@ def home():
         role = request.form.get('role')
         if not role:
             return "No role selected", 400
+        
+        # Get the selected experience level
+        experience_level = request.form.get('experience_level', 'entry')
             
         # Save the uploaded file to a temporary location
         temp_dir = tempfile.gettempdir()
@@ -29,8 +32,8 @@ def home():
         file.save(temp_path)
         
         try:
-            # Call the analyzer with the uploaded file and selected role
-            result = analyze_resume(temp_path, role)
+            # Call the analyzer with the uploaded file, selected role, and experience level
+            result = analyze_resume(temp_path, role, experience_level)
         finally:
             # Clean up the temporary file
             if os.path.exists(temp_path):
