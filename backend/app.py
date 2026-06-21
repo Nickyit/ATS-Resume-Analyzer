@@ -2,7 +2,7 @@ import os
 import re
 import sys
 import pdfplumber
-from ai_analyzer import analyze_all_projects, calculate_relevance_bonus
+from ai_analyzer import analyze_all_projects, calculate_relevance_bonus, evaluate_skills_sufficiency
 
 # Force UTF-8 output on Windows to prevent UnicodeEncodeError
 if sys.stdout.encoding != 'utf-8':
@@ -246,7 +246,18 @@ def summarize_project(project_text):
     return summary
 
 
-def analyze_resume(pdf_file, job_role):
+# Map experience level keys to display names
+EXPERIENCE_LEVEL_NAMES = {
+    "internship": "Internship",
+    "entry": "Entry Level",
+    "junior": "Junior",
+    "mid": "Mid Level",
+    "senior": "Senior",
+    "lead": "Lead / Staff",
+    "expert": "Industry Expert"
+}
+
+def analyze_resume(pdf_file, job_role, experience_level="entry"):
     """Main function that orchestrates the resume analysis process."""
     # 1. Extract all text from the PDF
     text = extract_text(pdf_file)
@@ -363,7 +374,11 @@ def analyze_resume(pdf_file, job_role):
 
     # 9. AI-powered project relevance analysis
     print("\nAnalyzing project relevance with AI...")
-    project_relevance, ai_available = analyze_all_projects(valid_projects, project_blocks, job_role)
+    project_relevance, ai_available = analyze_all_projects(valid_projects, project_blocks, job_role, experience_level)
+    
+    # 9b. AI-powered skills evaluation
+    print("\nEvaluating skills sufficiency with AI...")
+    skills_evaluation = evaluate_skills_sufficiency(found_skills, missing_skills, job_role, experience_level)
     
     # 10. Calculate project bonus (AI-weighted or flat fallback)
     project_bonus, used_ai = calculate_relevance_bonus(project_relevance, project_count)
@@ -381,12 +396,15 @@ def analyze_resume(pdf_file, job_role):
     print(f"\nATS Score: {score:.0f}%")
     
     # Return the analysis results as a dictionary so it can be used by the Flask API
+    level_display = EXPERIENCE_LEVEL_NAMES.get(experience_level, experience_level)
     return {
         "role": job_role,
+        "experience_level": level_display,
         "email": email,
         "phone": phone,
         "matched_skills": found_skills,
         "missing_skills": missing_skills,
+        "skills_evaluation": skills_evaluation,
         "projects": valid_projects,
         "project_summaries": project_summaries,
         "project_relevance": project_relevance,
