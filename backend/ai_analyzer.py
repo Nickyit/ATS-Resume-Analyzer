@@ -17,18 +17,21 @@ RELEVANCE_PROMPT = """You are an ATS Resume Analyzer.
 Target Role:
 {job_role}
 
+Experience Level:
+{experience_level}
+
 Project Description:
 {project_text}
 
 Your task:
 
-1. Decide if this project is relevant to the target role.
+1. Decide if this project is relevant to the target role at the specified experience level.
 2. Give a relevance score from 0 to 100.
 3. Clearly state:
    * Relevant
    * Partially Relevant
    * Not Relevant
-4. Give a short explanation.
+4. Give a short explanation considering the experience level.
 5. Mention which skills or technologies support your decision.
 
 Return ONLY in this format:
@@ -45,12 +48,51 @@ Relevant Skills:
 * skill2
 * skill3"""
 
+# The prompt template for evaluating skills sufficiency
+SKILLS_EVALUATION_PROMPT = """You are an ATS Resume Analyzer.
+
+Target Role:
+{job_role}
+
+Experience Level:
+{experience_level}
+
+Matched Skills:
+{matched_skills}
+
+Missing Skills:
+{missing_skills}
+
+Your task:
+1. Evaluate if the matched skills are sufficient for this role at this experience level.
+2. Consider the missing skills: are they critical dealbreakers, or nice-to-haves that can be learned?
+3. Provide a brief 2-3 sentence analysis of the candidate's skill readiness for this specific level.
+4. Conclude with a clear verdict label.
+
+Return ONLY in this format:
+
+Verdict: Sufficient / Needs Improvement / Insufficient
+
+Analysis:
+<2-3 sentences evaluating readiness considering the experience level>"""
+
 # Map internal role keys to human-readable role names for the prompt
 ROLE_DISPLAY_NAMES = {
     "ai/ml": "AI / ML Engineer",
     "data analyst": "Data Analyst",
     "frontend": "Frontend Developer",
     "sde": "Software Development Engineer (SDE)"
+}
+
+# Map experience level keys to display names for the prompt
+EXPERIENCE_LEVEL_DISPLAY = {
+    "internship": "Internship / Trainee",
+    "entry": "Entry Level (0-1 years)",
+    "junior": "Junior (1-3 years)",
+    "mid": "Mid Level (3-5 years)",
+    "senior": "Senior (5-8 years)",
+    "lead": "Lead / Staff (8+ years)",
+    "expert": "Industry Expert / Principal"
 }
 
 
@@ -145,7 +187,7 @@ def parse_ai_response(response_text):
         return None
 
 
-def analyze_project_relevance(project_title, project_text, job_role):
+def analyze_project_relevance(project_title, project_text, job_role, experience_level="entry"):
     """
     Analyzes how relevant a single project is to the target job role using Gemini AI.
     
@@ -153,9 +195,10 @@ def analyze_project_relevance(project_title, project_text, job_role):
         project_title: The title/name of the project
         project_text: The full description text of the project
         job_role: The target job role key (e.g., "ai/ml", "sde")
+        experience_level: The experience level key (e.g., "internship", "senior")
     
     Returns:
-        A dict with keys: score, reason, relevant_skills
+        A dict with keys: category, score, reason, relevant_skills
         Returns None if the analysis fails or API is unavailable.
     """
     client = _get_gemini_client()
@@ -165,12 +208,14 @@ def analyze_project_relevance(project_title, project_text, job_role):
     # Build the full project context (title + description)
     full_project_text = f"{project_title}\n{project_text}" if project_text else project_title
     
-    # Get the display name for the role
+    # Get display names for role and level
     role_name = ROLE_DISPLAY_NAMES.get(job_role, job_role)
+    level_name = EXPERIENCE_LEVEL_DISPLAY.get(experience_level, experience_level)
     
     # Fill in the prompt template
     prompt = RELEVANCE_PROMPT.format(
         job_role=role_name,
+        experience_level=level_name,
         project_text=full_project_text
     )
     
@@ -191,7 +236,7 @@ def analyze_project_relevance(project_title, project_text, job_role):
         return None
 
 
-def analyze_all_projects(valid_projects, project_blocks, job_role):
+def analyze_all_projects(valid_projects, project_blocks, job_role, experience_level="entry"):
     """
     Analyzes relevance for all projects. Returns a dict mapping project titles to their relevance data.
     
@@ -199,6 +244,7 @@ def analyze_all_projects(valid_projects, project_blocks, job_role):
         valid_projects: List of project title strings
         project_blocks: Dict mapping project titles to their description lines
         job_role: Target job role key
+        experience_level: Experience level key
     
     Returns:
         Tuple of (project_relevance dict, ai_available bool)
@@ -213,7 +259,7 @@ def analyze_all_projects(valid_projects, project_blocks, job_role):
     
     for project in valid_projects:
         proj_text = "\n".join(project_blocks.get(project, []))
-        result = analyze_project_relevance(project, proj_text, job_role)
+        result = analyze_project_relevance(project, proj_text, job_role, experience_level)
         
         if result is not None:
             project_relevance[project] = result
@@ -253,3 +299,51 @@ def calculate_relevance_bonus(project_relevance, project_count):
         elif project_count >= 1:
             return 5, False
         return 0, False
+
+def evaluate_skills_sufficiency(matched_skills, missing_skills, job_role, experience_level="entry"):
+    """
+    Evaluates if the candidate's skills are sufficient for the role and experience level.
+    """
+    client = _get_gemini_client()
+    if client is None:
+        return None
+        
+    role_name = ROLE_DISPLAY_NAMES.get(job_role, job_role)
+    level_name = EXPERIENCE_LEVEL_DISPLAY.get(experience_level, experience_level)
+    
+    matched_str = ", ".join(matched_skills) if matched_skills else "None"
+    missing_str = ", ".join(missing_skills) if missing_skills else "None"
+    
+    prompt = SKILLS_EVALUATION_PROMPT.format(
+        job_role=role_name,
+        experience_level=level_name,
+        matched_skills=matched_str,
+        missing_skills=missing_str
+    )
+    
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt
+        )
+        
+        # Parse the response
+        text = response.text
+        verdict = "Unknown"
+        analysis = ""
+        
+        verdict_match = re.search(r'Verdict:\s*(Sufficient|Needs Improvement|Insufficient)', text, re.IGNORECASE)
+        if verdict_match:
+            verdict = verdict_match.group(1).strip().title()
+            
+        analysis_match = re.search(r'Analysis:\s*\n(.*)', text, re.DOTALL | re.IGNORECASE)
+        if analysis_match:
+            analysis = analysis_match.group(1).strip()
+            
+        return {
+            "verdict": verdict,
+            "analysis": analysis
+        }
+    except Exception as e:
+        print(f"Warning: AI skills evaluation failed: {e}")
+        return None
