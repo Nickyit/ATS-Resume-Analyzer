@@ -104,6 +104,20 @@
             </div>
             {% endif %}
 
+            {% if data.experience_evaluation %}
+            <div class="skills-evaluation-card {% if data.experience_evaluation.verdict == 'Match' or data.experience_evaluation.verdict == 'Overqualified' %}sufficient{% else %}insufficient{% endif %}">
+                <div class="eval-header">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+                    </svg>
+                    <strong>Experience Match (Calculated: {{ data.experience_evaluation.total_years }}):</strong> {{ data.experience_evaluation.verdict }}
+                </div>
+                <div class="eval-body">
+                    {{ data.experience_evaluation.analysis }}
+                </div>
+            </div>
+            {% endif %}
+
             {% if data.projects %}
             <div class="projects-section">
                 <h3 class="projects-header">
