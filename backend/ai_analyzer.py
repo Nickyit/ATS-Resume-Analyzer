@@ -76,6 +76,29 @@ Verdict: Sufficient / Needs Improvement / Insufficient
 Analysis:
 <2-3 sentences evaluating readiness considering the experience level>"""
 
+# The prompt template for evaluating experience matching
+EXPERIENCE_EVALUATION_PROMPT = """You are an ATS Resume Analyzer.
+
+Target Experience Level:
+{experience_level}
+
+Extracted Experience Section from Resume:
+{experience_text}
+
+Your task:
+1. Carefully read the candidate's work history.
+2. Calculate the total years of relevant experience they have based on the dates provided.
+3. Compare their total years of experience against the Target Experience Level.
+4. Conclude if they meet the requirement.
+5. Provide a brief 2-3 sentence analysis of their work history duration.
+
+Return ONLY in this format:
+
+Total Years: <number>
+Verdict: Match / Underqualified / Overqualified
+Analysis:
+<2-3 sentences explaining the calculation and comparison>"""
+
 # Map internal role keys to human-readable role names for the prompt
 ROLE_DISPLAY_NAMES = {
     "ai/ml": "AI / ML Engineer",
@@ -346,4 +369,58 @@ def evaluate_skills_sufficiency(matched_skills, missing_skills, job_role, experi
         }
     except Exception as e:
         print(f"Warning: AI skills evaluation failed: {e}")
+        return None
+
+def evaluate_experience(experience_text, experience_level="entry"):
+    """
+    Evaluates if the candidate's actual years of experience matches the selected level.
+    """
+    client = _get_gemini_client()
+    if client is None:
+        return None
+        
+    level_name = EXPERIENCE_LEVEL_DISPLAY.get(experience_level, experience_level)
+    
+    if not experience_text or not experience_text.strip():
+        return {
+            "total_years": "0",
+            "verdict": "Underqualified",
+            "analysis": "No experience section was found in the resume to evaluate."
+        }
+    
+    prompt = EXPERIENCE_EVALUATION_PROMPT.format(
+        experience_level=level_name,
+        experience_text=experience_text
+    )
+    
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt
+        )
+        
+        text = response.text
+        total_years = "Unknown"
+        verdict = "Unknown"
+        analysis = ""
+        
+        years_match = re.search(r'Total Years:\s*(.*)', text, re.IGNORECASE)
+        if years_match:
+            total_years = years_match.group(1).strip()
+            
+        verdict_match = re.search(r'Verdict:\s*(Match|Underqualified|Overqualified)', text, re.IGNORECASE)
+        if verdict_match:
+            verdict = verdict_match.group(1).strip().title()
+            
+        analysis_match = re.search(r'Analysis:\s*\n(.*)', text, re.DOTALL | re.IGNORECASE)
+        if analysis_match:
+            analysis = analysis_match.group(1).strip()
+            
+        return {
+            "total_years": total_years,
+            "verdict": verdict,
+            "analysis": analysis
+        }
+    except Exception as e:
+        print(f"Warning: AI experience evaluation failed: {e}")
         return None
