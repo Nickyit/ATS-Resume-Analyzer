@@ -2,7 +2,7 @@ import os
 import re
 import sys
 import pdfplumber
-from ai_analyzer import analyze_all_projects, calculate_relevance_bonus, evaluate_skills_sufficiency
+from ai_analyzer import analyze_all_projects, calculate_relevance_bonus, evaluate_skills_sufficiency, evaluate_experience
 
 # Force UTF-8 output on Windows to prevent UnicodeEncodeError
 if sys.stdout.encoding != 'utf-8':
@@ -187,6 +187,41 @@ def extract_skills_section(text):
         
     # If all extraction attempts fail, return the entire text as a last resort
     return text
+
+def extract_experience_section(text):
+    """Extracts the 'Experience' section from the resume text."""
+    lines = text.split('\n')
+    exp_text = []
+    in_exp = False
+    
+    headers = [
+        "education", "skills", "projects", "certifications", "languages", 
+        "achievements", "summary", "profile", "objective", "publications", "interests", "hobbies",
+        "technical skills"
+    ]
+    
+    exp_headers = [
+        "experience", "work experience", "professional experience", "work history", "employment", "employment history"
+    ]
+    
+    for line in lines:
+        cleaned_line = line.strip().lower()
+        if cleaned_line.endswith(':'):
+            cleaned_line = cleaned_line[:-1].strip()
+            
+        if cleaned_line in exp_headers:
+            in_exp = True
+            continue
+            
+        if in_exp:
+            if cleaned_line in headers:
+                break
+            exp_text.append(line)
+            
+    if exp_text:
+        return "\n".join(exp_text)
+        
+    return ""
 
 
 def extract_projects_section(text):
@@ -380,6 +415,11 @@ def analyze_resume(pdf_file, job_role, experience_level="entry"):
     print("\nEvaluating skills sufficiency with AI...")
     skills_evaluation = evaluate_skills_sufficiency(found_skills, missing_skills, job_role, experience_level)
     
+    # 9c. AI-powered experience evaluation
+    print("Evaluating actual experience against target level with AI...")
+    experience_text = extract_experience_section(text)
+    experience_evaluation = evaluate_experience(experience_text, experience_level)
+    
     # 10. Calculate project bonus (AI-weighted or flat fallback)
     project_bonus, used_ai = calculate_relevance_bonus(project_relevance, project_count)
     score += project_bonus
@@ -405,6 +445,7 @@ def analyze_resume(pdf_file, job_role, experience_level="entry"):
         "matched_skills": found_skills,
         "missing_skills": missing_skills,
         "skills_evaluation": skills_evaluation,
+        "experience_evaluation": experience_evaluation,
         "projects": valid_projects,
         "project_summaries": project_summaries,
         "project_relevance": project_relevance,
