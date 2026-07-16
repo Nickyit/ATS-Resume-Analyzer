@@ -92,12 +92,16 @@ Your task:
 4. Conclude if they meet the requirement.
 5. Provide a brief 2-3 sentence analysis of their work history duration.
 
+If the Target Experience Level is 'Junior (1-3 years)' and the candidate does not have at least 2 years of experience or is missing their last experience information, you MUST explicitly output this exact phrase in the Analysis:
+"experience of two years is not present in your resume"
+
 Return ONLY in this format:
 
 Total Years: <number>
 Verdict: Match / Underqualified / Overqualified
 Analysis:
 <2-3 sentences explaining the calculation and comparison>"""
+
 
 # Map internal role keys to human-readable role names for the prompt
 ROLE_DISPLAY_NAMES = {
@@ -375,17 +379,41 @@ def evaluate_experience(experience_text, experience_level="entry"):
     """
     Evaluates if the candidate's actual years of experience matches the selected level.
     """
-    client = _get_gemini_client()
-    if client is None:
-        return None
-        
     level_name = EXPERIENCE_LEVEL_DISPLAY.get(experience_level, experience_level)
     
+    # 1. If experience text is empty or missing
     if not experience_text or not experience_text.strip():
+        if experience_level == "junior":
+            return {
+                "total_years": "0",
+                "verdict": "Underqualified",
+                "analysis": "experience of two years is not present in your resume"
+            }
         return {
             "total_years": "0",
             "verdict": "Underqualified",
             "analysis": "No experience section was found in the resume to evaluate."
+        }
+        
+    client = _get_gemini_client()
+    if client is None:
+        # Fallback when AI is offline
+        if experience_level == "junior":
+            # Simple heuristic check for "2 years" or "two years"
+            has_two_years = False
+            if re.search(r'(2|3|4|5|two|three|four|five)\s+years?', experience_text, re.IGNORECASE):
+                has_two_years = True
+            
+            if not has_two_years:
+                return {
+                    "total_years": "0-1",
+                    "verdict": "Underqualified",
+                    "analysis": "experience of two years is not present in your resume"
+                }
+        return {
+            "total_years": "Unknown",
+            "verdict": "Match",
+            "analysis": f"Evaluated against target level {level_name} (AI analysis offline)."
         }
     
     prompt = EXPERIENCE_EVALUATION_PROMPT.format(
@@ -416,6 +444,10 @@ def evaluate_experience(experience_text, experience_level="entry"):
         if analysis_match:
             analysis = analysis_match.group(1).strip()
             
+        # Post-processing: If junior level and underqualified, force the exact string in analysis
+        if experience_level == "junior" and verdict == "Underqualified":
+            analysis = "experience of two years is not present in your resume"
+            
         return {
             "total_years": total_years,
             "verdict": verdict,
@@ -423,4 +455,15 @@ def evaluate_experience(experience_text, experience_level="entry"):
         }
     except Exception as e:
         print(f"Warning: AI experience evaluation failed: {e}")
-        return None
+        if experience_level == "junior":
+            return {
+                "total_years": "0-1",
+                "verdict": "Underqualified",
+                "analysis": "experience of two years is not present in your resume"
+            }
+        return {
+            "total_years": "Unknown",
+            "verdict": "Underqualified",
+            "analysis": f"AI evaluation failed: {str(e)}"
+        }
+
