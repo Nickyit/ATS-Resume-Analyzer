@@ -2,6 +2,14 @@ import os
 import tempfile
 from flask import Flask, render_template, request
 from app import analyze_resume
+import nltk
+
+# Download NLTK data required by Sumy for Vercel
+try:
+    nltk.data.find('tokenizers/punkt_tab')
+except LookupError:
+    nltk.download('punkt_tab', quiet=True)
+
 
 # Point Flask to the 'frontend' directory for HTML templates and static files
 frontend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'frontend'))
