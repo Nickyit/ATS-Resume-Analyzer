@@ -4,11 +4,16 @@ from flask import Flask, render_template, request
 from app import analyze_resume
 import nltk
 
-# Download NLTK data required by Sumy for Vercel
+# Download NLTK data to /tmp on Vercel (read-only file system fix)
+nltk_data_dir = '/tmp/nltk_data'
+if not os.path.exists(nltk_data_dir):
+    os.makedirs(nltk_data_dir, exist_ok=True)
+nltk.data.path.append(nltk_data_dir)
+
 try:
     nltk.data.find('tokenizers/punkt_tab')
 except LookupError:
-    nltk.download('punkt_tab', quiet=True)
+    nltk.download('punkt_tab', download_dir=nltk_data_dir, quiet=True)
 
 
 # Point Flask to the 'frontend' directory for HTML templates and static files
