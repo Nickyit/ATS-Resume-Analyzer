@@ -251,14 +251,18 @@ def extract_projects_section(text):
         if clean.endswith(":"):
             clean = clean[:-1]
 
-        if clean in project_headers:
+        # Match exact headers or lines containing "projects" that are short (like "web development projects")
+        is_project_header = clean in project_headers or ("projects" in clean and len(clean.split()) <= 4)
+
+        if is_project_header:
             in_projects = True
             continue
 
         if in_projects:
-            # Check if this line starts a new section (partial match)
-            if any(h in clean for h in end_headers):
-                break
+            # Check if this line starts a new section (must be short and not a bullet point)
+            if len(clean.split()) <= 4 and not clean.startswith(("-", "•", "*", "▪", "✓")):
+                if any(h in clean for h in end_headers):
+                    break
 
             projects.append(line)
 
@@ -437,6 +441,17 @@ def analyze_resume(pdf_file, job_role, experience_level="entry"):
     
     # Return the analysis results as a dictionary so it can be used by the Flask API
     level_display = EXPERIENCE_LEVEL_NAMES.get(experience_level, experience_level)
+    
+    # Non-tech roles don't strictly require projects
+    non_tech_roles = [
+        "product manager", "pm", "product", 
+        "marketing", "digital marketing", 
+        "sales", "sales executive", "business development", 
+        "hr", "human resources", "recruiter", "talent acquisition", 
+        "business analyst", "ba"
+    ]
+    projects_required = job_role not in non_tech_roles
+
     return {
         "role": job_role,
         "experience_level": level_display,
@@ -450,7 +465,8 @@ def analyze_resume(pdf_file, job_role, experience_level="entry"):
         "project_summaries": project_summaries,
         "project_relevance": project_relevance,
         "ai_available": ai_available,
-        "ats_score": round(score, 0)
+        "ats_score": round(score, 0),
+        "projects_required": projects_required
     }
 
 
